@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "convention-export.schema.json",
+  "title": "Intercode Convention Export",
+  "description": "Portable exchange format for importing a convention into Intercode. One file = one convention.",
+  "type": "object",
+  "required": ["version", "convention", "users"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string", "const": "1" },
+    "source_system": { "type": "string", "enum": ["intercode1", "procon", "other"] },
+    "organization_name": { "type": ["string", "null"] },
+    "cms_content_set": {
+      "type": ["string", "null"],
+      "description": "Name of a built-in Intercode CMS content set to load (e.g. 'standard', 'procon_import')"
+    },
+    "convention": { "$ref": "#/$defs/convention" },
+    "users": { "type": "array", "items": { "$ref": "#/$defs/user" } },
+    "user_con_profiles": { "type": "array", "items": { "$ref": "#/$defs/user_con_profile" } },
+    "events": { "type": "array", "items": { "$ref": "#/$defs/event" } },
+    "event_proposals": { "type": "array", "items": { "$ref": "#/$defs/event_proposal" } },
+    "runs": { "type": "array", "items": { "$ref": "#/$defs/run" } },
+    "signups": { "type": "array", "items": { "$ref": "#/$defs/signup" } },
+    "team_members": { "type": "array", "items": { "$ref": "#/$defs/team_member" } },
+    "tickets": { "type": "array", "items": { "$ref": "#/$defs/ticket" } },
+    "store_items": { "type": "array", "items": { "$ref": "#/$defs/store_item" } },
+    "store_orders": { "type": "array", "items": { "$ref": "#/$defs/store_order" } }
+  },
+
+  "$defs": {
+    "convention": {
+      "type": "object",
+      "required": ["name", "domain", "timezone_name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "domain": { "type": "string" },
+        "timezone_name": { "type": "string", "description": "IANA timezone name, e.g. 'America/New_York'" },
+        "ticket_mode": { "type": "string", "enum": ["disabled", "required_for_signup", "ticket_per_event"] },
+        "site_mode": { "type": "string", "enum": ["convention", "single_event", "event_series"] },
+        "starts_at": { "type": "string", "format": "date-time" },
+        "ends_at": { "type": "string", "format": "date-time" },
+        "show_schedule": { "type": "string", "enum": ["yes", "no", "gms_only", "priv_vendors"] },
+        "show_event_list": { "type": "string", "enum": ["yes", "no", "gms_only", "priv_vendors"] },
+        "maximum_tickets": { "type": ["integer", "null"] },
+        "maximum_event_signups": { "$ref": "#/$defs/scheduled_value" },
+        "default_layout_content": {
+          "type": ["string", "null"],
+          "description": "Raw Liquid template to override the default layout loaded from cms_content_set"
+        },
+        "ticket_types": { "type": "array", "items": { "$ref": "#/$defs/ticket_type" } },
+        "event_categories": { "type": "array", "items": { "$ref": "#/$defs/event_category" } },
+        "rooms": { "type": "array", "items": { "$ref": "#/$defs/room" } },
+        "staff_positions": { "type": "array", "items": { "$ref": "#/$defs/staff_position" } }
+      }
+    },
+
+    "scheduled_value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["always"],
+          "additionalProperties": false,
+          "properties": { "always": { "$ref": "#/$defs/event_signup_limit" } }
+        },
+        {
+          "type": "object",
+          "required": ["timespans"],
+          "additionalProperties": false,
+          "properties": {
+            "timespans": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["value"],
+                "additionalProperties": false,
+                "properties": {
+                  "start": { "type": ["string", "null"], "format": "date-time" },
+                  "finish": { "type": ["string", "null"], "format": "date-time" },
+                  "value": { "$ref": "#/$defs/event_signup_limit" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+
+    "event_signup_limit": {
+      "type": "string",
+      "enum": ["not_yet", "1", "2", "3", "unlimited"]
+    },
+
+    "ticket_type": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": ["string", "null"] },
+        "publicly_available": { "type": "boolean" },
+        "allows_event_signups": { "type": "boolean" },
+        "counts_towards_convention_maximum": { "type": "boolean" },
+        "maximum_event_provided_tickets": { "type": ["integer", "null"] }
+      }
+    },
+
+    "event_category": {
+      "type": "object",
+      "required": ["name", "team_member_name", "scheduling_ui"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "team_member_name": { "type": "string" },
+        "scheduling_ui": { "type": "string", "enum": ["regular", "single_run", "recurring"] },
+        "default_color": { "type": ["string", "null"] },
+        "full_color": { "type": ["string", "null"] },
+        "signed_up_color": { "type": ["string", "null"] }
+      }
+    },
+
+    "room": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": { "name": { "type": "string" } }
+    },
+
+    "staff_position": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": ["string", "null"], "format": "email" },
+        "visible": { "type": "boolean" },
+        "permissions": { "type": "array", "items": { "type": "string" } },
+        "user_emails": { "type": "array", "items": { "type": "string", "format": "email" } }
+      }
+    },
+
+    "user": {
+      "type": "object",
+      "required": ["email", "first_name", "last_name"],
+      "additionalProperties": false,
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "first_name": { "type": "string" },
+        "last_name": { "type": "string" },
+        "password_hash": {
+          "type": ["string", "null"],
+          "description": "BCrypt password hash. Null means the user must reset their password."
+        }
+      }
+    },
+
+    "user_con_profile": {
+      "type": "object",
+      "required": ["user_email"],
+      "additionalProperties": false,
+      "properties": {
+        "user_email": { "type": "string", "format": "email" },
+        "first_name": { "type": ["string", "null"] },
+        "last_name": { "type": ["string", "null"] },
+        "nickname": { "type": ["string", "null"] },
+        "bio": { "type": ["string", "null"] },
+        "show_nickname_in_bio": { "type": "boolean" },
+        "receive_whos_free_emails": { "type": "boolean" },
+        "phone": { "type": ["string", "null"] },
+        "day_phone": { "type": ["string", "null"] },
+        "evening_phone": { "type": ["string", "null"] },
+        "best_call_time": { "type": ["string", "null"] },
+        "preferred_contact": { "type": ["string", "null"], "enum": ["email", "day_phone", "evening_phone", null] },
+        "address": { "type": ["string", "null"] },
+        "city": { "type": ["string", "null"] },
+        "state": { "type": ["string", "null"] },
+        "zipcode": { "type": ["string", "null"] },
+        "country": { "type": ["string", "null"] },
+        "gender": { "type": ["string", "null"] },
+        "birth_date": { "type": ["string", "null"], "format": "date" },
+        "additional_info": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "event": {
+      "type": "object",
+      "required": ["id", "title", "event_category_name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "Stable identifier for cross-references within this file" },
+        "title": { "type": "string" },
+        "event_category_name": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "dropped", "proposed", "rejected", "standalone"] },
+        "author": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "organization": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"] },
+        "length_seconds": { "type": ["integer", "null"] },
+        "can_play_concurrently": { "type": "boolean" },
+        "con_mail_destination": { "type": "string", "enum": ["event_email", "gms"] },
+        "description": { "type": ["string", "null"] },
+        "short_blurb": { "type": ["string", "null"] },
+        "participant_communications": { "type": ["string", "null"] },
+        "registration_policy": { "$ref": "#/$defs/registration_policy" },
+        "form_response_attributes": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "event_proposal": {
+      "type": "object",
+      "required": ["owner_email", "event_category_name", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "owner_email": { "type": "string", "format": "email" },
+        "event_category_name": { "type": "string" },
+        "event_id": { "type": ["string", "null"], "description": "id of the accepted event, if any" },
+        "status": { "type": "string", "enum": ["proposed", "reviewing", "accepted", "rejected", "withdrawn"] },
+        "form_response_attributes": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "run": {
+      "type": "object",
+      "required": ["event_id", "starts_at"],
+      "additionalProperties": false,
+      "properties": {
+        "event_id": { "type": "string" },
+        "starts_at": { "type": "string", "format": "date-time" },
+        "title_suffix": { "type": ["string", "null"] },
+        "schedule_note": { "type": ["string", "null"] },
+        "room_names": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "signup": {
+      "type": "object",
+      "required": ["event_id", "run_index", "user_email", "state"],
+      "additionalProperties": false,
+      "properties": {
+        "event_id": { "type": "string" },
+        "run_index": { "type": "integer", "minimum": 0, "description": "0-based index into runs for this event_id" },
+        "user_email": { "type": "string", "format": "email" },
+        "bucket_key": { "type": ["string", "null"] },
+        "requested_bucket_key": { "type": ["string", "null"] },
+        "state": { "type": "string", "enum": ["confirmed", "waitlisted", "withdrawn"] },
+        "counted": { "type": "boolean" }
+      }
+    },
+
+    "team_member": {
+      "type": "object",
+      "required": ["event_id", "user_email"],
+      "additionalProperties": false,
+      "properties": {
+        "event_id": { "type": "string" },
+        "user_email": { "type": "string", "format": "email" },
+        "display": { "type": "boolean" },
+        "show_email": { "type": "boolean" },
+        "receive_con_email": { "type": "boolean" },
+        "receive_signup_email": { "type": "string", "enum": ["all_signups", "non_waitlist_signups", "no"] }
+      }
+    },
+
+    "ticket": {
+      "type": "object",
+      "required": ["user_email", "ticket_type_name"],
+      "additionalProperties": false,
+      "properties": {
+        "user_email": { "type": "string", "format": "email" },
+        "ticket_type_name": { "type": "string" },
+        "provided_by_event_id": { "type": ["string", "null"] },
+        "payment_amount": { "$ref": "#/$defs/money" },
+        "payment_note": { "type": ["string", "null"] }
+      }
+    },
+
+    "store_item": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": ["string", "null"] },
+        "available": { "type": "boolean" },
+        "price": { "$ref": "#/$defs/money" }
+      }
+    },
+
+    "store_order": {
+      "type": "object",
+      "required": ["user_email", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "user_email": { "type": "string", "format": "email" },
+        "status": { "type": "string", "enum": ["pending", "paid", "unpaid", "cancelled"] },
+        "payment_amount": { "$ref": "#/$defs/money" },
+        "payment_note": { "type": ["string", "null"] },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/store_order_entry" } }
+      }
+    },
+
+    "store_order_entry": {
+      "type": "object",
+      "required": ["store_item_name", "quantity"],
+      "additionalProperties": false,
+      "properties": {
+        "store_item_name": { "type": "string" },
+        "quantity": { "type": "integer", "minimum": 1 },
+        "price_per_item": { "$ref": "#/$defs/money" }
+      }
+    },
+
+    "registration_policy": {
+      "type": "object",
+      "required": ["buckets"],
+      "additionalProperties": false,
+      "properties": {
+        "buckets": { "type": "array", "items": { "$ref": "#/$defs/registration_policy_bucket" } },
+        "prevent_no_preference_signups": { "type": "boolean" }
+      }
+    },
+
+    "registration_policy_bucket": {
+      "type": "object",
+      "required": ["key", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": ["string", "null"] },
+        "slots_limited": { "type": "boolean" },
+        "anything": { "type": "boolean" },
+        "expose_attendees": { "type": "boolean" },
+        "minimum_slots": { "type": ["integer", "null"], "minimum": 0 },
+        "preferred_slots": { "type": ["integer", "null"], "minimum": 0 },
+        "total_slots": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+
+    "money": {
+      "type": "object",
+      "required": ["fractional", "currency_code"],
+      "additionalProperties": false,
+      "properties": {
+        "fractional": { "type": "integer", "description": "Amount in smallest currency unit (e.g. cents for USD)" },
+        "currency_code": { "type": "string", "minLength": 3, "maxLength": 3 }
+      }
+    }
+  }
+}

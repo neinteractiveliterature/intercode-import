@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+require_relative 'tables/con'
+require_relative 'tables/users'
+require_relative 'tables/events'
+require_relative 'tables/bids'
+require_relative 'tables/rooms'
+require_relative 'tables/runs'
+require_relative 'tables/gms'
+require_relative 'tables/signup'
+require_relative 'tables/bios'
+require_relative 'tables/away'
+require_relative 'tables/pre_con_events'
+require_relative 'tables/pre_con_runs'
+require_relative 'tables/store_items'
+require_relative 'tables/store_orders'
+require_relative 'tables/store_order_entries'
