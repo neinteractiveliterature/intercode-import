@@ -48,14 +48,13 @@ module IntercodeImport
         ].freeze
 
         REGISTRATION_STATUS_TICKET_TYPES = {
-          'Paid'       => { name: 'paid', description: 'Paid badge', publicly_available: false },
-          'Comp'       => { name: 'event_comp', description: 'Comp badge for event',
-                            publicly_available: false, maximum_event_provided_tickets: 2 },
-          'Marketing'  => { name: 'marketing_comp', description: 'Marketing comp badge',
-                            publicly_available: false },
-          'Vendor'     => { name: 'vendor', description: 'Vendor badge', publicly_available: false,
-                            counts_towards_convention_maximum: false, allows_event_signups: false },
-          'Rollover'   => { name: 'rollover', description: 'Rollover badge', publicly_available: false }
+          'Paid'      => { name: 'paid', description: 'Paid badge' },
+          'Comp'      => { name: 'event_comp', description: 'Comp badge for event',
+                           maximum_event_provided_tickets: 2 },
+          'Marketing' => { name: 'marketing_comp', description: 'Marketing comp badge' },
+          'Vendor'    => { name: 'vendor', description: 'Vendor badge',
+                           counts_towards_convention_maximum: false, allows_event_signups: false },
+          'Rollover'  => { name: 'rollover', description: 'Rollover badge' }
         }.freeze
 
         attr_reader :user_con_profile_id_map, :staff_position_accumulator, :ticket_types_used
@@ -108,8 +107,9 @@ module IntercodeImport
             email: email,
             first_name: row[:FirstName].presence || email,
             last_name: row[:LastName].presence || '',
-            password_hash: password_hash
-          }
+            password_hash: password_hash,
+            password_hash_type: password_hash ? 'bcrypt_wrapped_md5' : nil
+          }.compact
         end
 
         def build_user_con_profile(row, email)

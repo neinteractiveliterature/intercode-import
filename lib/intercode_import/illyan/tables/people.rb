@@ -21,16 +21,15 @@ module IntercodeImport
             email = row[:email].to_s.downcase.strip
             next if email.blank?
 
-            hash = password_hash_for(row)
-            next unless hash
+            pw = password_hash_for(row)
+            next unless pw
 
             id_map[row[:id]] = email
             {
               email: email,
               first_name: row[:firstname].presence || email,
               last_name: row[:lastname].presence || '',
-              password_hash: hash
-            }.compact
+            }.merge(pw).compact
           end
         end
       end

@@ -46,6 +46,7 @@ module IntercodeImport
             maximum_event_signups: { always: max_signups },
             organization_name: @organization_name,
             cms_content_set: site_mode == 'convention' ? 'procon_import' : 'single_event',
+            event_categories: event_categories_for(site_mode),
             default_layout_content: custom_layout_content(domain)
           }.compact
         end
@@ -71,6 +72,27 @@ module IntercodeImport
           return 'not_yet'   if max <= 0
           return max.to_s    if max < 4
           'unlimited'
+        end
+
+        def event_categories_for(site_mode)
+          larp = {
+            name: 'Larp',
+            team_member_name: 'GM',
+            scheduling_ui: site_mode == 'convention' ? 'regular' : 'single_run',
+            event_form_title: 'Regular event form',
+            event_proposal_form_title: site_mode == 'convention' ? 'Proposal form' : nil
+          }.compact
+
+          return [larp] if site_mode == 'single_event'
+
+          con_services = {
+            name: 'Con services',
+            team_member_name: 'team member',
+            scheduling_ui: 'single_run',
+            event_form_title: 'Filler event form'
+          }
+
+          [larp, con_services]
         end
 
         def custom_layout_content(domain)

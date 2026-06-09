@@ -65,6 +65,7 @@ module IntercodeImport
         events_table = Tables::Events.new(@connection)
         events = events_table.export!
         event_id_map = events_table.id_map
+        convention[:event_categories] = events_table.used_event_categories
         registration_policy_by_event_id = events.each_with_object({}) do |e, h|
           h[e[:id]] = e[:registration_policy]
         end
@@ -116,6 +117,8 @@ module IntercodeImport
 
         pre_con_events, pre_con_runs = export_pre_con(starts_at, convention[:timezone_name], room_id_map)
 
+        cms = export_cms_content
+
         {
           version: '1',
           source_system: 'intercode1',
@@ -131,7 +134,11 @@ module IntercodeImport
           team_members: team_members,
           tickets: tickets,
           store_items: store_items,
-          store_orders: store_orders
+          store_orders: store_orders,
+          cms_files: cms[:cms_files],
+          cms_pages: cms[:cms_pages],
+          cms_partials: cms[:cms_partials],
+          cms_navigation_items: cms[:cms_navigation_items]
         }
       end
 
@@ -208,6 +215,13 @@ module IntercodeImport
         end
 
         [store_items.map { |i| i.except(:id) }, store_orders]
+      end
+
+      def export_cms_content
+        CmsContent.new(@constants_file, @config).export!
+      rescue StandardError => e
+        logger.warn "CMS content export failed: #{e.message}; skipping"
+        { cms_pages: [], cms_partials: [], cms_files: [], cms_navigation_items: [] }
       end
 
       def export_pre_con(con_starts_at, con_timezone_name, room_id_map)

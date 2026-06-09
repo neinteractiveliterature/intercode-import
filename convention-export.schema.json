@@ -24,7 +24,11 @@
     "team_members": { "type": "array", "items": { "$ref": "#/$defs/team_member" } },
     "tickets": { "type": "array", "items": { "$ref": "#/$defs/ticket" } },
     "store_items": { "type": "array", "items": { "$ref": "#/$defs/store_item" } },
-    "store_orders": { "type": "array", "items": { "$ref": "#/$defs/store_order" } }
+    "store_orders": { "type": "array", "items": { "$ref": "#/$defs/store_order" } },
+    "cms_files": { "type": "array", "items": { "$ref": "#/$defs/cms_file" } },
+    "cms_pages": { "type": "array", "items": { "$ref": "#/$defs/cms_page" } },
+    "cms_partials": { "type": "array", "items": { "$ref": "#/$defs/cms_partial" } },
+    "cms_navigation_items": { "type": "array", "items": { "$ref": "#/$defs/cms_navigation_section" } }
   },
 
   "$defs": {
@@ -98,7 +102,6 @@
       "properties": {
         "name": { "type": "string" },
         "description": { "type": ["string", "null"] },
-        "publicly_available": { "type": "boolean" },
         "allows_event_signups": { "type": "boolean" },
         "counts_towards_convention_maximum": { "type": "boolean" },
         "maximum_event_provided_tickets": { "type": ["integer", "null"] }
@@ -107,12 +110,14 @@
 
     "event_category": {
       "type": "object",
-      "required": ["name", "team_member_name", "scheduling_ui"],
+      "required": ["name", "team_member_name", "scheduling_ui", "event_form_title"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string" },
         "team_member_name": { "type": "string" },
         "scheduling_ui": { "type": "string", "enum": ["regular", "single_run", "recurring"] },
+        "event_form_title": { "type": "string", "description": "Title of the event form in the loaded CMS content set" },
+        "event_proposal_form_title": { "type": ["string", "null"], "description": "Title of the event proposal form, if this category accepts proposals" },
         "default_color": { "type": ["string", "null"] },
         "full_color": { "type": ["string", "null"] },
         "signed_up_color": { "type": ["string", "null"] }
@@ -150,6 +155,15 @@
         "password_hash": {
           "type": ["string", "null"],
           "description": "BCrypt password hash. Null means the user must reset their password."
+        },
+        "password_hash_type": {
+          "type": ["string", "null"],
+          "enum": ["bcrypt", "bcrypt_wrapped_md5", "bcrypt_wrapped_sha1", null],
+          "description": "How to interpret password_hash. 'bcrypt' sets encrypted_password; 'bcrypt_wrapped_md5' sets legacy_password_md5; 'bcrypt_wrapped_sha1' sets legacy_password_sha1."
+        },
+        "password_sha1_salt": {
+          "type": ["string", "null"],
+          "description": "Salt for bcrypt_wrapped_sha1 passwords (stored in legacy_password_sha1_salt)"
         }
       }
     },
@@ -344,6 +358,59 @@
       "properties": {
         "fractional": { "type": "integer", "description": "Amount in smallest currency unit (e.g. cents for USD)" },
         "currency_code": { "type": "string", "minLength": 3, "maxLength": 3 }
+      }
+    },
+
+    "cms_file": {
+      "type": "object",
+      "required": ["filename", "content_base64", "content_type"],
+      "additionalProperties": false,
+      "properties": {
+        "filename": { "type": "string" },
+        "content_base64": { "type": "string", "description": "Base64-encoded file content" },
+        "content_type": { "type": "string" }
+      }
+    },
+
+    "cms_page": {
+      "type": "object",
+      "required": ["name", "slug", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "content": { "type": "string", "description": "Liquid template content" }
+      }
+    },
+
+    "cms_partial": {
+      "type": "object",
+      "required": ["name", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "content": { "type": "string" }
+      }
+    },
+
+    "cms_navigation_section": {
+      "type": "object",
+      "required": ["title"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "page_name"],
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string" },
+              "page_name": { "type": "string", "description": "Matches the 'name' field of a cms_page" }
+            }
+          }
+        }
       }
     }
   }
