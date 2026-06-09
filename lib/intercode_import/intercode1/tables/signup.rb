@@ -63,8 +63,12 @@ module IntercodeImport
 
           gender_key = row[:Gender]&.downcase
           anything_key = policy[:buckets].size == 1 ? policy[:buckets].first[:key] : 'flex'
-          bucket_key = slot_available?(run_ref, gender_key, policy) ? gender_key : anything_key
-          slot_available?(run_ref, bucket_key, policy) ? bucket_key : nil
+
+          if slot_available?(run_ref, gender_key, policy)
+            gender_key
+          else
+            slot_available?(run_ref, anything_key, policy) ? anything_key : nil
+          end
         end
 
         def slot_available?(run_ref, bucket_key, policy)

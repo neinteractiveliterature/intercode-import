@@ -103,7 +103,7 @@ module IntercodeImport
         end
 
         def event_status(row)
-          return 'active' if row[:SpecialEvent]
+          return 'active' if row[:SpecialEvent] == 1
           row[:Status] == 'Accepted' ? 'active' : 'dropped'
         end
 
