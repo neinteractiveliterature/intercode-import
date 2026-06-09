@@ -71,6 +71,7 @@ PLATFORMS
 DEPENDENCIES
   activesupport
   bcrypt
+  minitest
   mysql2 (~> 0.5.3)
   nokogiri
   parallel
