@@ -14,6 +14,7 @@ class EventliteNavigationItemsDbTest < Minitest::Test
       primary_key :id
       String  :name
       String  :slug
+      String  :content
       Integer :parent_id
       String  :parent_type
     end
@@ -94,5 +95,27 @@ class EventliteNavigationItemsDbTest < Minitest::Test
     @db[:navigation_items].insert(title: 'Broken', page_id: 99999, position: 1,
                                   parent_type: 'Event', parent_id: @event_id)
     assert_empty export_nav
+  end
+
+  def test_nav_link_to_eventlite_only_page_skipped
+    reg_page_id = @db[:pages].insert(name: 'Registration', slug: 'registration',
+                                     content: '<h1>Register</h1>{% ticket_form %}',
+                                     parent_type: 'Event', parent_id: @event_id)
+    @db[:navigation_items].insert(title: 'Register', page_id: reg_page_id, position: 1,
+                                  parent_type: 'Event', parent_id: @event_id)
+    assert_empty export_nav
+  end
+
+  def test_nav_link_to_normal_page_kept_alongside_skipped_page
+    reg_page_id = @db[:pages].insert(name: 'Registration', slug: 'registration',
+                                     content: '{% ticket_form %}',
+                                     parent_type: 'Event', parent_id: @event_id)
+    @db[:navigation_items].insert(title: 'Register', page_id: reg_page_id, position: 2,
+                                  parent_type: 'Event', parent_id: @event_id)
+    @db[:navigation_items].insert(title: 'Home', page_id: @page_id, position: 1,
+                                  parent_type: 'Event', parent_id: @event_id)
+    links = export_nav.first[:links]
+    assert_equal 1, links.size
+    assert_equal 'Home', links.first[:title]
   end
 end

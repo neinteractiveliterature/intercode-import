@@ -16,10 +16,6 @@ module IntercodeImport
           )
         end
 
-        # Tags that exist in Eventlite but not in Intercode's Liquid environment.
-        # Pages using these tags are skipped rather than exported with broken content.
-        EVENTLITE_ONLY_TAGS = %w[ticket_form].freeze
-
         def export!
           logger.info "Exporting Pages for event #{@event_id}"
           results = []
@@ -27,7 +23,7 @@ module IntercodeImport
           dataset.each do |row|
             content = row[:content] || ''
 
-            if EVENTLITE_ONLY_TAGS.any? { |tag| content.include?("{%") && content.match?(/\{%-?\s*#{tag}[\s%}]/) }
+            if eventlite_only_content?(content)
               logger.info "Skipping page '#{row[:slug]}' (contains Eventlite-only tag)"
               next
             end

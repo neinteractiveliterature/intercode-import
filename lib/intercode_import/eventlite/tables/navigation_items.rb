@@ -18,7 +18,8 @@ module IntercodeImport
         def export!
           logger.info "Exporting NavigationItems for event #{@event_id}"
 
-          page_name_by_id = connection[:pages].select(:id, :name).all.each_with_object({}) do |row, h|
+          page_name_by_id = connection[:pages].select(:id, :name, :content).all.each_with_object({}) do |row, h|
+            next if eventlite_only_content?(row[:content])
             h[row[:id]] = row[:name]
           end
 
