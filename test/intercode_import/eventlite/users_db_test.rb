@@ -135,4 +135,35 @@ class EventliteUsersDbTest < Minitest::Test
     table.export!
     assert_equal 'map@example.com', table.id_map[uid]
   end
+
+  def test_ticket_only_user_included
+    eid = insert_event
+    ttid = insert_ticket_type(event_id: eid)
+    insert_ticket(ticket_type_id: ttid, user_id: nil, email: 'guest@example.com', name: 'Guest User')
+    users = export_users
+    assert_equal 1, users.size
+    u = users.first
+    assert_equal 'guest@example.com', u[:email]
+    assert_equal 'Guest', u[:first_name]
+    assert_equal 'User', u[:last_name]
+    refute u.key?(:password_hash)
+  end
+
+  def test_ticket_only_user_not_duplicated_when_user_account_exists
+    insert_user(email: 'overlap@example.com', encrypted_password: '$2a$12$hash')
+    eid = insert_event
+    ttid = insert_ticket_type(event_id: eid)
+    insert_ticket(ticket_type_id: ttid, user_id: nil, email: 'overlap@example.com', name: 'Overlap User')
+    users = export_users
+    assert_equal 1, users.size
+    assert users.first[:password_hash]
+  end
+
+  def test_ticket_only_users_deduplicated_across_tickets
+    eid = insert_event
+    ttid = insert_ticket_type(event_id: eid)
+    insert_ticket(ticket_type_id: ttid, user_id: nil, email: 'dupe@example.com', name: 'Dupe One')
+    insert_ticket(ticket_type_id: ttid, user_id: nil, email: 'dupe@example.com', name: 'Dupe Two')
+    assert_equal 1, export_users.size
+  end
 end

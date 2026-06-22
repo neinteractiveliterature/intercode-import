@@ -37,6 +37,15 @@ module IntercodeImport
             results << record
           end
 
+          ticket_only_rows.each do |row|
+            email = row[:email].to_s.downcase.strip
+            next if email.blank? || seen_emails[email]
+
+            seen_emails[email] = true
+            first_name, last_name = parse_name(row[:name])
+            results << { email: email, first_name: first_name, last_name: last_name }
+          end
+
           results
         end
 
@@ -47,6 +56,10 @@ module IntercodeImport
             next if h[row[:user_id]] || row[:name].to_s.blank?
             h[row[:user_id]] = row[:name].to_s.strip
           end
+        end
+
+        def ticket_only_rows
+          connection[:tickets].where(user_id: nil).exclude(email: nil).select(:email, :name).all
         end
 
         def parse_name(full_name)

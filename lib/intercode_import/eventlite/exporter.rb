@@ -134,7 +134,12 @@ module IntercodeImport
           .all
 
         ticket_rows.filter_map do |row|
-          user_email = user_email_by_id[row[:user_id]]
+          user_email =
+            if row[:user_id]
+              user_email_by_id[row[:user_id]]
+            else
+              row[:email].to_s.downcase.strip.presence
+            end
           next unless user_email
 
           ticket_type_name = ticket_type_name_by_id[row[:ticket_type_id]]
@@ -170,7 +175,12 @@ module IntercodeImport
 
         seen = {}
         ticket_rows.each_with_object([]) do |row, profiles|
-          user_email = user_email_by_id[row[:user_id]]
+          user_email =
+            if row[:user_id]
+              user_email_by_id[row[:user_id]]
+            else
+              row[:email].to_s.downcase.strip.presence
+            end
           next unless user_email
           next if seen[user_email]
 

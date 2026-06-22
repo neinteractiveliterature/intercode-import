@@ -23,6 +23,7 @@ class EventliteTicketsDbTest < Minitest::Test
       primary_key :id
       Integer  :ticket_type_id
       Integer  :user_id
+      String   :email
       DateTime :canceled_at
     end
   end
@@ -78,6 +79,18 @@ class EventliteTicketsDbTest < Minitest::Test
 
   def test_unknown_user_id_skipped
     @db[:tickets].insert(ticket_type_id: @tt_id, user_id: 9999)
+    assert_empty export_tickets
+  end
+
+  def test_ticket_with_direct_email_exported
+    @db[:tickets].insert(ticket_type_id: @tt_id, user_id: nil, email: 'guest@example.com')
+    tickets = export_tickets
+    assert_equal 1, tickets.size
+    assert_equal 'guest@example.com', tickets.first[:user_email]
+  end
+
+  def test_ticket_with_nil_user_id_and_nil_email_skipped
+    @db[:tickets].insert(ticket_type_id: @tt_id, user_id: nil, email: nil)
     assert_empty export_tickets
   end
 end

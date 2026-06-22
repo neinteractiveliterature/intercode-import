@@ -24,7 +24,12 @@ module IntercodeImport
           results = []
 
           dataset.each do |row|
-            user_email = @user_email_by_id[row[:user_id]]
+            user_email =
+              if row[:user_id]
+                @user_email_by_id[row[:user_id]]
+              else
+                row[:email].to_s.downcase.strip.presence
+              end
             next unless user_email
 
             ticket_type_name = @ticket_type_name_by_id[row[:ticket_type_id]]
