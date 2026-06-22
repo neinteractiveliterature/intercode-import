@@ -94,26 +94,14 @@ module IntercodeImport
           title:                event_name,
           event_category_name:  'Event',
           status:               'active',
-          registration_policy:  {
-            buckets: [{ key: 'attendees', name: 'Attendees', slots_limited: false, anything: false }],
-            prevent_no_preference_signups: false
-          }
+          registration_policy:  build_registration_policy(ticket_type_rows)
         }
         event_record[:length_seconds] = event_row[:length_seconds] if event_row[:length_seconds]
 
         run = { event_id: event_id.to_s, room_names: [] }
         run[:starts_at] = event_row[:start_time].iso8601 if event_row[:start_time]
 
-        signups = tickets.map do |ticket|
-          {
-            event_id:   event_id.to_s,
-            run_index:  0,
-            user_email: ticket[:user_email],
-            state:      'confirmed',
-            bucket_key: 'attendees',
-            counted:    true
-          }
-        end
+        signups = build_signups(event_id.to_s, tickets, ticket_type_rows)
 
         {
           version:              '1',
@@ -133,6 +121,48 @@ module IntercodeImport
           cms_files:            cms_files,
           cms_navigation_items: cms_nav_items
         }
+      end
+
+      def build_registration_policy(ticket_type_rows)
+        if ticket_type_rows.size <= 1
+          return {
+            buckets: [{ key: 'attendees', name: 'Attendees', slots_limited: false, anything: false }],
+            prevent_no_preference_signups: false
+          }
+        end
+
+        buckets = ticket_type_rows.map do |tt|
+          bucket = { key: bucket_key_for(tt[:name]), name: tt[:name], anything: false }
+          if tt[:number_available]
+            bucket.merge!(slots_limited: true, total_slots: tt[:number_available],
+                          minimum_slots: 0, preferred_slots: tt[:number_available])
+          else
+            bucket[:slots_limited] = false
+          end
+          bucket
+        end
+        { buckets: buckets, prevent_no_preference_signups: false }
+      end
+
+      def build_signups(event_id_str, tickets, ticket_type_rows)
+        if ticket_type_rows.size <= 1
+          return tickets.map do |ticket|
+            { event_id: event_id_str, run_index: 0, user_email: ticket[:user_email],
+              state: 'confirmed', bucket_key: 'attendees', counted: true }
+          end
+        end
+
+        slots_by_name = ticket_type_rows.each_with_object({}) { |r, h| h[r[:name]] = r[:number_available] || 0 }
+
+        tickets.group_by { |t| t[:user_email] }.map do |user_email, user_tickets|
+          best = user_tickets.max_by { |t| slots_by_name[t[:ticket_type_name]] || 0 }
+          { event_id: event_id_str, run_index: 0, user_email: user_email,
+            state: 'confirmed', bucket_key: bucket_key_for(best[:ticket_type_name]), counted: true }
+        end
+      end
+
+      def bucket_key_for(name)
+        name.to_s.downcase.gsub(/\s+/, '_').gsub(/[^\w]/, '')
       end
 
       def build_store_items(ticket_type_rows)
