@@ -89,8 +89,31 @@ module IntercodeImport
 
         convention[:default_layout_content] = default_layout_content if default_layout_content
 
-        event_record = { id: event_id.to_s, title: event_name, event_category_name: 'Event', status: 'active' }
+        event_record = {
+          id:                   event_id.to_s,
+          title:                event_name,
+          event_category_name:  'Event',
+          status:               'active',
+          registration_policy:  {
+            buckets: [{ key: 'attendees', name: 'Attendees', slots_limited: false, anything: false }],
+            prevent_no_preference_signups: false
+          }
+        }
         event_record[:length_seconds] = event_row[:length_seconds] if event_row[:length_seconds]
+
+        run = { event_id: event_id.to_s, room_names: [] }
+        run[:starts_at] = event_row[:start_time].iso8601 if event_row[:start_time]
+
+        signups = tickets.map do |ticket|
+          {
+            event_id:   event_id.to_s,
+            run_index:  0,
+            user_email: ticket[:user_email],
+            state:      'confirmed',
+            bucket_key: 'attendees',
+            counted:    true
+          }
+        end
 
         {
           version:              '1',
@@ -99,8 +122,8 @@ module IntercodeImport
           users:                event_users,
           user_con_profiles:    user_con_profiles,
           events:               [event_record],
-          runs:                 [],
-          signups:              [],
+          runs:                 [run],
+          signups:              signups,
           team_members:         [],
           tickets:              tickets,
           store_items:          store_items,
