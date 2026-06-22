@@ -45,16 +45,18 @@ module IntercodeImport
 
         ticket_type_rows = @connection[:ticket_types].where(event_id: event_id).order(:id).all
         ticket_type_name_by_id = ticket_type_rows.each_with_object({}) { |r, h| h[r[:id]] = r[:name] }
+        ticket_type_slug_by_id = ticket_type_rows.each_with_object({}) { |r, h| h[r[:id]] = slug_for(r[:name]) }
 
         ticket_types = ticket_type_rows.map do |tt|
           {
-            name: tt[:name],
+            name: slug_for(tt[:name]),
+            description: tt[:name],
             allows_event_signups: true,
             counts_towards_convention_maximum: true
           }
         end
 
-        tickets_table = Tables::Tickets.new(@connection, event_id, ticket_type_name_by_id, user_email_by_id)
+        tickets_table = Tables::Tickets.new(@connection, event_id, ticket_type_slug_by_id, user_email_by_id)
         tickets = tickets_table.export!
 
         ticket_emails     = Set.new(tickets.map { |t| t[:user_email] })
@@ -133,7 +135,7 @@ module IntercodeImport
         end
 
         buckets = ticket_type_rows.map do |tt|
-          bucket = { key: bucket_key_for(tt[:name]), name: tt[:name], anything: false }
+          bucket = { key: slug_for(tt[:name]), name: tt[:name], anything: false }
           if tt[:number_available]
             bucket.merge!(slots_limited: true, total_slots: tt[:number_available],
                           minimum_slots: 0, preferred_slots: tt[:number_available])
@@ -153,17 +155,18 @@ module IntercodeImport
           end
         end
 
-        slots_by_name = ticket_type_rows.each_with_object({}) { |r, h| h[r[:name]] = r[:number_available] || 0 }
+        # tickets already carry slug-form ticket_type_name; key by slug for slot lookup
+        slots_by_slug = ticket_type_rows.each_with_object({}) { |r, h| h[slug_for(r[:name])] = r[:number_available] || 0 }
 
         tickets.group_by { |t| t[:user_email] }.map do |user_email, user_tickets|
-          best = user_tickets.max_by { |t| slots_by_name[t[:ticket_type_name]] || 0 }
+          best = user_tickets.max_by { |t| slots_by_slug[t[:ticket_type_name]] || 0 }
           { event_id: event_id_str, run_index: 0, user_email: user_email,
-            state: 'confirmed', bucket_key: bucket_key_for(best[:ticket_type_name]), counted: true }
+            state: 'confirmed', bucket_key: best[:ticket_type_name], counted: true }
         end
       end
 
-      def bucket_key_for(name)
-        name.to_s.downcase.gsub(/\s+/, '_').gsub(/[^\w]/, '')
+      def slug_for(name)
+        name.to_s.downcase.gsub(/[-\s]+/, '_').gsub(/[^\w]/, '')
       end
 
       def build_store_items(ticket_type_rows)
@@ -171,7 +174,7 @@ module IntercodeImport
           item = {
             name:                      tt[:name],
             available:                 true,
-            provides_ticket_type_name: tt[:name]
+            provides_ticket_type_name: slug_for(tt[:name])
           }
           item[:price] = { fractional: tt[:price_cents], currency_code: 'USD' } if tt[:price_cents]
           item
