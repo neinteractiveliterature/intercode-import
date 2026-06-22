@@ -106,6 +106,7 @@ module IntercodeImport
         {
           version:              '1',
           source_system:        'eventlite',
+          cms_content_set:      'single_event',
           convention:           convention,
           users:                event_users,
           user_con_profiles:    user_con_profiles,
@@ -272,7 +273,7 @@ module IntercodeImport
           name:             'Event',
           team_member_name: 'Organizer',
           scheduling_ui:    'single_run',
-          event_form_title: 'Event Proposal Form'
+          event_form_title: 'Regular event form'
         }
       end
 
