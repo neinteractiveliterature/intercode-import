@@ -7,6 +7,7 @@ ruby File.read(File.expand_path('.ruby-version', __dir__)).strip
 gem 'activesupport'
 gem 'bcrypt'
 gem 'mysql2', '~> 0.5.3'
+gem 'pg'
 gem 'nokogiri'
 gem 'parallel'
 gem 'rake'

@@ -8,7 +8,9 @@ require 'stringio'
 require 'intercode_import'
 require 'intercode_import/intercode1'
 require 'intercode_import/illyan'
+require 'intercode_import/eventlite'
 require_relative 'support/db_test_helper'
+require_relative 'support/eventlite_db_test_helper'
 
 if ENV['CI'].present?
   Minitest::Reporters.use!(
