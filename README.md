@@ -2,7 +2,7 @@
 
 A Ruby toolkit for exporting legacy convention management system data into the [Intercode](https://github.com/neinteractiveliterature/intercode) convention import format.
 
-Three source systems are supported: **Intercode 1** (PHP/MySQL), **ProCon** (MySQL), and **Illyan** (the user authentication database used alongside ProCon).
+Four source systems are supported: **Intercode 1** (PHP/MySQL), **ProCon** (MySQL), **Illyan** (the user authentication database used alongside ProCon), and **Eventlite** (Rails/PostgreSQL).
 
 ## Output format
 
@@ -65,6 +65,27 @@ ORGANIZATION_NAME='Arisia' \
 | `CONVENTION_DOMAIN_REGEX` | Yes | Ruby regex matched against convention domains to select which conventions to export. |
 | `ORGANIZATION_NAME` | Yes | Organization name written into each export file. |
 | `OUTPUT_FILE` | No | Output path. Only used when exactly one convention matches; otherwise files are named `convention-export-<domain>.json`. Pass `-` to print to stdout. |
+
+### Eventlite
+
+Exports one JSON file per event from an Eventlite PostgreSQL database. Each event becomes a separate single-event Intercode convention.
+
+```sh
+EVENTLITE_DB_URL=postgres://user:pass@host/eventlite_db \
+DOMAIN_SUFFIX=example.com \
+TIMEZONE=America/New_York \
+  bundle exec rake export:eventlite
+```
+
+| Variable | Required | Description |
+|---|---|---|
+| `EVENTLITE_DB_URL` | Yes | Sequel-compatible connection URL for the Eventlite PostgreSQL database. |
+| `DOMAIN_SUFFIX` | No | Domain suffix appended to each event's slug to form the convention domain (default: `example.com`). |
+| `TIMEZONE` | No | IANA timezone name applied to all conventions (default: `UTC`). |
+| `FILE_BASE_URL` | No | Base URL for CMS file attachments stored in S3 (e.g. `https://my-bucket.s3.amazonaws.com/`). |
+| `OUTPUT_FILE` | No | Output path. Only used when exactly one event is found; otherwise files are named `convention-export-<domain>.json`. Pass `-` to print to stdout. |
+
+Each Eventlite event is exported as a `single_event` Intercode convention using the `ticket_per_event` ticket mode. Ticket types become Intercode ticket types and store items; users who purchased multiple ticket types get one ticket (the type with the most available slots wins) and additional store order entries for the rest. Pages containing Eventlite-specific Liquid tags (e.g. `{% ticket_form %}`) are omitted, as is any navigation pointing to those pages.
 
 ### Illyan (standalone user export)
 
