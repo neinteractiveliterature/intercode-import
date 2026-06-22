@@ -21,6 +21,7 @@ module IntercodeImport
 
             seen_emails[email] = true
             first_name, last_name = parse_name(@names_by_user_id[row[:id]])
+            first_name = email_prefix(email) if first_name.blank? && last_name.blank?
 
             record = {
               email: email,
@@ -43,6 +44,7 @@ module IntercodeImport
 
             seen_emails[email] = true
             first_name, last_name = parse_name(row[:name])
+            first_name = email_prefix(email) if first_name.blank? && last_name.blank?
             results << { email: email, first_name: first_name, last_name: last_name }
           end
 
@@ -66,6 +68,10 @@ module IntercodeImport
           return ['', ''] if full_name.blank?
           parts = full_name.strip.split(' ', 2)
           [parts[0] || '', parts[1] || '']
+        end
+
+        def email_prefix(email)
+          email.to_s.split('@').first.to_s
         end
       end
     end

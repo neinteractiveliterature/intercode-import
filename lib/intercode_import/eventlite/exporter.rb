@@ -57,7 +57,7 @@ module IntercodeImport
         end
 
         tickets_table = Tables::Tickets.new(@connection, event_id, ticket_type_slug_by_id, user_email_by_id)
-        tickets = tickets_table.export!
+        tickets = deduplicate_tickets(tickets_table.export!, ticket_type_rows)
 
         ticket_emails     = Set.new(tickets.map { |t| t[:user_email] })
         event_users       = all_users.select { |u| ticket_emails.include?(u[:email]) }
@@ -169,13 +169,17 @@ module IntercodeImport
         name.to_s.downcase.gsub(/[-\s]+/, '_').gsub(/[^\w]/, '')
       end
 
+      def deduplicate_tickets(tickets, ticket_type_rows)
+        return tickets if ticket_type_rows.size <= 1
+        slots_by_slug = ticket_type_rows.each_with_object({}) { |r, h| h[slug_for(r[:name])] = r[:number_available] || 0 }
+        tickets.group_by { |t| t[:user_email] }.map do |_email, user_tickets|
+          user_tickets.max_by { |t| slots_by_slug[t[:ticket_type_name]] || 0 }
+        end
+      end
+
       def build_store_items(ticket_type_rows)
         ticket_type_rows.map do |tt|
-          item = {
-            name:                      tt[:name],
-            available:                 true,
-            provides_ticket_type_name: slug_for(tt[:name])
-          }
+          item = { name: tt[:name], available: true }
           item[:price] = { fractional: tt[:price_cents], currency_code: 'USD' } if tt[:price_cents]
           item
         end
