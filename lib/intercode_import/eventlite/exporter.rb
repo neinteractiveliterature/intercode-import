@@ -37,10 +37,12 @@ module IntercodeImport
         cms_layouts       = layouts_table.export!
         layout_name_by_id = layouts_table.id_map
 
-        default_layout_content = nil
-        if event_row[:default_cms_layout_id]
-          default_row = @connection[:cms_layouts].where(id: event_row[:default_cms_layout_id]).first
-          default_layout_content = default_row&.fetch(:content, nil)
+        default_layout_name = layout_name_by_id[event_row[:default_cms_layout_id]]
+
+        root_page_slug = nil
+        if event_row[:root_page_id]
+          root_page_row = @connection[:pages].where(id: event_row[:root_page_id]).first
+          root_page_slug = root_page_row&.fetch(:slug, nil)
         end
 
         ticket_type_rows = @connection[:ticket_types].where(event_id: event_id).order(:id).all
@@ -71,7 +73,7 @@ module IntercodeImport
         cms_nav_items = Tables::NavigationItems.new(@connection, event_id).export!
 
         convention = {
-          name:             site_settings&.fetch(:site_title, nil).presence || event_name,
+          name:             event_name,
           domain:           "#{event_slug}.#{@domain_suffix}",
           timezone_name:    @timezone,
           site_mode:        'single_event',
@@ -89,7 +91,8 @@ module IntercodeImport
           end
         end
 
-        convention[:default_layout_content] = default_layout_content if default_layout_content
+        convention[:default_layout_name] = default_layout_name if default_layout_name
+        convention[:root_page_slug] = root_page_slug if root_page_slug
 
         event_record = {
           id:                   event_id.to_s,

@@ -23,13 +23,28 @@ module IntercodeImport
             h[row[:id]] = row[:name]
           end
 
-          links = dataset.filter_map do |row|
-            page_name = page_name_by_id[row[:page_id]]
-            next unless page_name
-            { title: row[:title], page_name: page_name }
+          all_items = dataset.all
+          top_level = all_items.select { |r| r[:navigation_section_id].nil? }
+          children_by_section = all_items.group_by { |r| r[:navigation_section_id] }
+          children_by_section.delete(nil)
+
+          sections = []
+          top_level.each do |item|
+            if item[:page_id].nil?
+              links = (children_by_section[item[:id]] || []).filter_map do |child|
+                page_name = page_name_by_id[child[:page_id]]
+                next unless page_name
+                { title: child[:title], page_name: page_name }
+              end
+              sections << { title: item[:title], links: links } unless links.empty?
+            else
+              page_name = page_name_by_id[item[:page_id]]
+              next unless page_name
+              sections << { title: item[:title], links: [{ title: item[:title], page_name: page_name }] }
+            end
           end
 
-          links.empty? ? [] : [{ title: 'Navigation', links: links }]
+          sections
         end
       end
     end

@@ -22,6 +22,7 @@ class EventliteNavigationItemsDbTest < Minitest::Test
       primary_key :id
       String  :title
       Integer :page_id
+      Integer :navigation_section_id
       Integer :parent_id
       String  :parent_type
       Integer :position
@@ -55,31 +56,55 @@ class EventliteNavigationItemsDbTest < Minitest::Test
     assert_empty export_nav
   end
 
-  def test_single_item_produces_one_section_with_one_link
+  def test_standalone_link_produces_own_section
     @db[:navigation_items].insert(title: 'Home', page_id: @page_id, position: 1,
                                   parent_type: 'Event', parent_id: @event_id)
     sections = export_nav
     assert_equal 1, sections.size
-    assert_equal 'Navigation', sections.first[:title]
+    assert_equal 'Home', sections.first[:title]
     assert_equal [{ title: 'Home', page_name: 'Home' }], sections.first[:links]
   end
 
-  def test_items_ordered_by_position
+  def test_section_header_with_children
+    section_id = @db[:navigation_items].insert(title: 'Info', page_id: nil, position: 1,
+                                               parent_type: 'Event', parent_id: @event_id)
+    @db[:navigation_items].insert(title: 'Home', page_id: @page_id, position: 1,
+                                  navigation_section_id: section_id,
+                                  parent_type: 'Event', parent_id: @event_id)
+    sections = export_nav
+    assert_equal 1, sections.size
+    assert_equal 'Info', sections.first[:title]
+    assert_equal [{ title: 'Home', page_name: 'Home' }], sections.first[:links]
+  end
+
+  def test_section_header_with_no_valid_children_excluded
+    section_id = @db[:navigation_items].insert(title: 'Info', page_id: nil, position: 1,
+                                               parent_type: 'Event', parent_id: @event_id)
+    reg_page_id = @db[:pages].insert(name: 'Registration', slug: 'registration',
+                                     content: '{% ticket_form %}',
+                                     parent_type: 'Event', parent_id: @event_id)
+    @db[:navigation_items].insert(title: 'Register', page_id: reg_page_id, position: 1,
+                                  navigation_section_id: section_id,
+                                  parent_type: 'Event', parent_id: @event_id)
+    assert_empty export_nav
+  end
+
+  def test_standalone_links_ordered_by_position
     page2_id = @db[:pages].insert(name: 'About', slug: 'about',
                                   parent_type: 'Event', parent_id: @event_id)
     @db[:navigation_items].insert(title: 'About', page_id: page2_id, position: 2,
                                   parent_type: 'Event', parent_id: @event_id)
     @db[:navigation_items].insert(title: 'Home', page_id: @page_id, position: 1,
                                   parent_type: 'Event', parent_id: @event_id)
-    links = export_nav.first[:links]
-    assert_equal ['Home', 'About'], links.map { |l| l[:title] }
+    sections = export_nav
+    assert_equal ['Home', 'About'], sections.map { |s| s[:title] }
   end
 
   def test_global_nav_items_included
     global_page_id = @db[:pages].insert(name: 'Info', slug: 'info', parent_type: nil, parent_id: nil)
     @db[:navigation_items].insert(title: 'Info', page_id: global_page_id, position: 1,
                                   parent_type: nil, parent_id: nil)
-    assert_equal 1, export_nav.first[:links].size
+    assert_equal 1, export_nav.size
   end
 
   def test_other_event_items_excluded
@@ -114,8 +139,9 @@ class EventliteNavigationItemsDbTest < Minitest::Test
                                   parent_type: 'Event', parent_id: @event_id)
     @db[:navigation_items].insert(title: 'Home', page_id: @page_id, position: 1,
                                   parent_type: 'Event', parent_id: @event_id)
-    links = export_nav.first[:links]
-    assert_equal 1, links.size
-    assert_equal 'Home', links.first[:title]
+    sections = export_nav
+    assert_equal 1, sections.size
+    assert_equal 'Home', sections.first[:title]
+    assert_equal [{ title: 'Home', page_name: 'Home' }], sections.first[:links]
   end
 end
