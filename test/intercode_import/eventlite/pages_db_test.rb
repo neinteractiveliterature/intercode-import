@@ -94,4 +94,18 @@ class EventlitePagesDbTest < Minitest::Test
                        parent_type: 'Event', parent_id: @event_id)
     assert_equal '', export_pages.first[:content]
   end
+
+  def test_page_with_ticket_form_tag_skipped
+    @db[:pages].insert(name: 'Registration', slug: 'registration',
+                       content: '<h1>Register</h1>{% ticket_form %}',
+                       parent_type: 'Event', parent_id: @event_id)
+    assert_empty export_pages
+  end
+
+  def test_page_with_normal_liquid_tag_included
+    @db[:pages].insert(name: 'Home', slug: 'home',
+                       content: '{% if user %}Hello{% endif %}',
+                       parent_type: 'Event', parent_id: @event_id)
+    assert_equal 1, export_pages.size
+  end
 end
