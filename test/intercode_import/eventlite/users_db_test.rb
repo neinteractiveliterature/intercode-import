@@ -122,10 +122,10 @@ class EventliteUsersDbTest < Minitest::Test
     assert_equal 'Picard Smith', users.first[:last_name]
   end
 
-  def test_empty_first_and_last_name_when_no_ticket
+  def test_email_prefix_used_as_first_name_when_no_ticket
     insert_user(email: 'notix@example.com')
     users = export_users
-    assert_equal '', users.first[:first_name]
+    assert_equal 'notix', users.first[:first_name]
     assert_equal '', users.first[:last_name]
   end
 
