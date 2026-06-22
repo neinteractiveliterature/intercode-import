@@ -73,7 +73,7 @@ module IntercodeImport
           domain:           "#{event_slug}.#{@domain_suffix}",
           timezone_name:    @timezone,
           site_mode:        'single_event',
-          ticket_mode:      'required_for_signup',
+          ticket_mode:      'ticket_per_event',
           ticket_types:     ticket_types,
           event_categories: [default_event_category],
           rooms:            [],
