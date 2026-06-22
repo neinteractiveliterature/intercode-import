@@ -5,6 +5,7 @@ require 'intercode_import'
 require 'intercode_import/intercode1'
 require 'intercode_import/procon'
 require 'intercode_import/illyan'
+require 'intercode_import/eventlite'
 
 def fetch_env!(name)
   value = ENV[name].presence
@@ -48,6 +49,29 @@ namespace :export do
       domain = data[:convention][:domain].tr('.', '-')
       default_name = "convention-export-#{domain}.json"
       output_file = conventions.size == 1 ? (ENV['OUTPUT_FILE'] || default_name) : default_name
+      json = JSON.pretty_generate(data)
+      if output_file == '-'
+        puts json
+      else
+        File.write(output_file, json)
+        puts "Wrote #{output_file} (#{data[:convention][:name]})"
+      end
+    end
+  end
+
+  desc 'Export Eventlite events to convention JSON format (one file per event)'
+  task :eventlite do
+    exporter = IntercodeImport::Eventlite::Exporter.new(
+      fetch_env!('EVENTLITE_DB_URL'),
+      domain_suffix: ENV['DOMAIN_SUFFIX'] || 'example.com',
+      timezone: ENV['TIMEZONE'] || 'UTC',
+      file_base_url: ENV['FILE_BASE_URL']
+    )
+    exports = exporter.export
+    exports.each do |data|
+      domain = data[:convention][:domain].tr('.', '-')
+      default_name = "convention-export-#{domain}.json"
+      output_file = exports.size == 1 ? (ENV['OUTPUT_FILE'] || default_name) : default_name
       json = JSON.pretty_generate(data)
       if output_file == '-'
         puts json

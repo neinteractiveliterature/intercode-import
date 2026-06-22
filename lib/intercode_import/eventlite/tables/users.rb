@@ -1,0 +1,79 @@
+# frozen_string_literal: true
+
+module IntercodeImport
+  module Eventlite
+    module Tables
+      class Users < Eventlite::Table
+        def initialize(connection)
+          super
+          @names_by_user_id = load_names_from_tickets
+        end
+
+        def export!
+          logger.info 'Exporting Users'
+          results = []
+          seen_emails = {}
+
+          dataset.each do |row|
+            email = row[:email].to_s.downcase.strip
+            next if email.blank?
+            next if seen_emails[email]
+
+            seen_emails[email] = true
+            first_name, last_name = parse_name(@names_by_user_id[row[:id]])
+            first_name = email_prefix(email) if first_name.blank? && last_name.blank?
+
+            record = {
+              email: email,
+              first_name: first_name,
+              last_name: last_name
+            }
+
+            if row[:encrypted_password].present?
+              record[:password_hash] = row[:encrypted_password]
+              record[:password_hash_type] = 'bcrypt'
+            end
+
+            id_map[row[:id]] = email
+            results << record
+          end
+
+          ticket_only_rows.each do |row|
+            email = row[:email].to_s.downcase.strip
+            next if email.blank? || seen_emails[email]
+
+            seen_emails[email] = true
+            first_name, last_name = parse_name(row[:name])
+            first_name = email_prefix(email) if first_name.blank? && last_name.blank?
+            results << { email: email, first_name: first_name, last_name: last_name }
+          end
+
+          results
+        end
+
+        private
+
+        def load_names_from_tickets
+          connection[:tickets].select(:user_id, :name).all.each_with_object({}) do |row, h|
+            next if h[row[:user_id]] || row[:name].to_s.blank?
+            h[row[:user_id]] = row[:name].to_s.strip
+          end
+        end
+
+        def ticket_only_rows
+          connection[:tickets].where(user_id: nil).exclude(email: nil).select(:email, :name).all
+        end
+
+        def parse_name(full_name)
+          return ['', ''] if full_name.blank?
+          parts = full_name.strip.split(' ', 2)
+          [parts[0] || '', parts[1] || '']
+        end
+
+        def email_prefix(email)
+          email.to_s.split('@').first.to_s
+        end
+      end
+    end
+  end
+end

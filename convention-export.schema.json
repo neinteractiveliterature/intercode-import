@@ -8,7 +8,7 @@
   "additionalProperties": false,
   "properties": {
     "version": { "type": "string", "const": "1" },
-    "source_system": { "type": "string", "enum": ["intercode1", "procon", "other"] },
+    "source_system": { "type": "string", "enum": ["intercode1", "procon", "eventlite", "other"] },
     "organization_name": { "type": ["string", "null"] },
     "cms_content_set": {
       "type": ["string", "null"],
@@ -28,7 +28,8 @@
     "cms_files": { "type": "array", "items": { "$ref": "#/$defs/cms_file" } },
     "cms_pages": { "type": "array", "items": { "$ref": "#/$defs/cms_page" } },
     "cms_partials": { "type": "array", "items": { "$ref": "#/$defs/cms_partial" } },
-    "cms_navigation_items": { "type": "array", "items": { "$ref": "#/$defs/cms_navigation_section" } }
+    "cms_navigation_items": { "type": "array", "items": { "$ref": "#/$defs/cms_navigation_section" } },
+    "cms_layouts": { "type": "array", "items": { "$ref": "#/$defs/cms_layout" } }
   },
 
   "$defs": {
@@ -296,7 +297,11 @@
         "name": { "type": "string" },
         "description": { "type": ["string", "null"] },
         "available": { "type": "boolean" },
-        "price": { "$ref": "#/$defs/money" }
+        "price": { "$ref": "#/$defs/money" },
+        "provides_ticket_type_name": {
+          "type": ["string", "null"],
+          "description": "Name of the ticket_type this product provides when purchased"
+        }
       }
     },
 
@@ -379,7 +384,18 @@
       "properties": {
         "name": { "type": "string" },
         "slug": { "type": "string" },
-        "content": { "type": "string", "description": "Liquid template content" }
+        "content": { "type": "string", "description": "Liquid template content" },
+        "cms_layout_name": { "type": ["string", "null"], "description": "Name of the cms_layout to use for this page" }
+      }
+    },
+
+    "cms_layout": {
+      "type": "object",
+      "required": ["name", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "content": { "type": "string", "description": "Liquid template for the layout" }
       }
     },
 
