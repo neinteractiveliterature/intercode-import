@@ -21,7 +21,9 @@ module IntercodeImport
 
           dataset.each do |row|
             id_map[row[:id]] = row[:name]
-            results << { name: row[:name], content: row[:content] || '' }
+            record = { name: row[:name], content: row[:content] || '' }
+            record[:navbar_classes] = row[:navbar_classes] if row[:navbar_classes].present?
+            results << record
           end
 
           results
