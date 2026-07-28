@@ -20,7 +20,7 @@ jobs:
       EVENTLITE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/eventlite_test
     services:
       mysql:
-        image: mysql:8
+        image: mysql:26
         env:
           MYSQL_ROOT_PASSWORD: mysql
           MYSQL_DATABASE: intercode_import_test
